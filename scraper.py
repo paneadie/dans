@@ -23,29 +23,32 @@ regex = re.compile(r"\[|\]|<", re.IGNORECASE)
 import time
 
 ### Dans
-#make headless
+#driver = webdriver.Firefox(executable_path=r'/usr/local/bin/geckodriver')
+#path = "https://www.danmurphys.com.au/red-wine/all"
+#driver.get(path)   
+# Make headless
 options = Options()
 options.headless = True
-
-driver = webdriver.Firefox(options=options,executable_path=r'/usr/local/bin/geckodriver')
-path = "https://www.danmurphys.com.au/red-wine/all"
-driver.get(path)   
 
 file = "scraped_" + time.strftime("%Y%m%d") + ".csv"
 
 
 with open(file, "w") as csvFile:
+    #path = "https://www.danmurphys.com.au/red-wine/all"
     fieldnames = ['URL']
     writer = csv.DictWriter(csvFile, fieldnames=fieldnames)
     writer.writeheader()
-    for item in range(1,500):
+    for item in range(1,230):
+        driver = webdriver.Firefox(options=options,executable_path=r'/usr/local/bin/geckodriver')
+        #driver = webdriver.Firefox(executable_path=r'/usr/local/bin/geckodriver')
         path = "https://www.danmurphys.com.au/red-wine/all?page=" + str(item)
-        driver.implicitly_wait(2)
+ #       driver.implicitly_wait(1)
         driver.get(path)
         elems = driver.find_elements_by_xpath("//a[@href]")
         for elem in elems:
             writer.writerow({'URL': elem.get_attribute("href")})
-        print("Page done")
+        driver.close()
 
 
+driver.quit()
 

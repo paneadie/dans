@@ -57,8 +57,8 @@ result = []
 
 for wine in mylist:
     url = "https://api.danmurphys.com.au/apis/ui/Product/" + str(wine)
-    r = requests.get(url).json()
     try:
+        r = requests.get(url).json()
         rtoo = pd.json_normalize(r["Products"])
         result.append(rtoo)
     except:
