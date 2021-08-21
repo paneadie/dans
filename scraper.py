@@ -49,6 +49,33 @@ with open(file, "w") as csvFile:
             writer.writerow({'URL': elem.get_attribute("href")})
         driver.close()
 
+    for item in range(1,6):
+        driver = webdriver.Firefox(options=options,executable_path=r'/usr/local/bin/geckodriver')
+        #driver = webdriver.Firefox(executable_path=r'/usr/local/bin/geckodriver')
+        #path = "https://www.danmurphys.com.au/red-wine/all?page=" + str(item)
+        path = "https://www.danmurphys.com.au/list/under-wraps?page=" + str(item)
+ #       driver.implicitly_wait(1)
+        driver.get(path)
+        elems = driver.find_elements_by_xpath("//a[@href]")
+        for elem in elems:
+            writer.writerow({'URL': elem.get_attribute("href")})
+        driver.close()
+
+        https://www.danmurphys.com.au/search?searchTerm=wraps&page=2
+
+    for item in range(1,20):
+        driver = webdriver.Firefox(options=options,executable_path=r'/usr/local/bin/geckodriver')
+        #driver = webdriver.Firefox(executable_path=r'/usr/local/bin/geckodriver')
+        #path = "https://www.danmurphys.com.au/red-wine/all?page=" + str(item)
+        #path = "https://www.danmurphys.com.au/list/under-wraps?page=" + str(item)
+        path = "https://www.danmurphys.com.au/search?searchTerm=wraps&page=" + str(item)
+ #       driver.implicitly_wait(1)
+        driver.get(path)
+        elems = driver.find_elements_by_xpath("//a[@href]")
+        for elem in elems:
+            writer.writerow({'URL': elem.get_attribute("href")})
+        driver.close()
+
 
 driver.quit()
 
