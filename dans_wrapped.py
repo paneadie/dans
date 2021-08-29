@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import pandas as pd
 import time
@@ -278,7 +279,7 @@ keep_nlp =['Categories',
 #### RUNNING HERE
 
 input_file = "API_results_" + time.strftime("%Y%m%d") + ".csv"
-wide = load_n_explode("input_file")
+wide = load_n_explode(input_file)
 
 ## Get the easy matches
 gives = giveaway(wide)
