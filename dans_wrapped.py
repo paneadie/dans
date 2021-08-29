@@ -297,12 +297,16 @@ avail = wide[wide["IsForDelivery"]][["Stockcode",'varietal','Prices.singleprice.
 
 matches = pd.merge(matches, avail, left_on='Stockcode_x', right_on="Stockcode")
 matches["Savings"] = matches['Prices.promoprice.BeforePromotion'] - matches['Prices.promoprice.AfterPromotion']
-matches["Matched Description"] = pd.merge(matches, wide, left_on='Stockcode_y', right_on="Stockcode")["Description"]
-
+matches = pd.merge(matches, wide[["Description","Stockcode"]], left_on='Stockcode_y', right_on="Stockcode")
+#matches.columns = ['Stockcode_x', 'Stockcode_y', 'Distance', 'MatchLevel', 'Stockcode_x', 'varietal', 'Prices.singleprice.Value', 'Prices.promoprice.Value', 'Prices.promoprice.BeforePromotion', 'Prices.promoprice.AfterPromotion', 'Savings', 'Description', 'Stockcode_Z']
 matches = matches[matches.MatchLevel.str.contains("Good")]
 
-matches = matches[['Stockcode_x', 'Stockcode_y', 'Matched Description', 'varietal','METHOD',  'Prices.promoprice.BeforePromotion', 'Prices.promoprice.AfterPromotion', 'Savings']]
+matches = matches[['Stockcode_x', 'Stockcode_y', 'Description', 'varietal', 'Prices.promoprice.BeforePromotion', 'Prices.promoprice.AfterPromotion', 'Savings']]
 matches = matches.sort_values(['Savings'], ascending=[False])
+
+matches = matches.loc[:,~matches.columns.duplicated()]
+
+matches = matches.drop_duplicates()
 
 final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make_clickable, }) \
     .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
