@@ -39,12 +39,12 @@ frame = pd.concat(li, axis=0, ignore_index=True)
 
 wines = frame
 # And now I'll filter out the product linkes
-wines = wines[wines.URL.str.contains('https://www.danmurphys.com.au/product')]
+wines = wines[wines.URL.str.contains('https://www.danmurphys.com.au/product',case=False, na=False)]
 
 wines = wines.replace(r'https://www.danmurphys.com.au/product/DM_', r'', regex=True)
 wines = wines.replace(r'/.*$', r'', regex=True)
 wines = wines.drop_duplicates()
-
+wines = wines.dropna()
 
 #And now to call the API
 
