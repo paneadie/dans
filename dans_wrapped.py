@@ -308,6 +308,10 @@ matches = matches.loc[:,~matches.columns.duplicated()]
 
 matches = matches.drop_duplicates()
 
+csv_file = "Match_results" + time.strftime("%Y%m%d") + ".csv"
+matches.to_csv(csv_file)
+
+
 final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make_clickable, }) \
     .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
     .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
