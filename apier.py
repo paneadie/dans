@@ -25,7 +25,7 @@ import glob
 # Here we'll loop through all files and blend them into one.
 
 path = r'/home/stu/code/dans' # use your path
-all_files = glob.glob(path + "/scraped*.csv")
+all_files = glob.glob(path + "/sitemap.csv")
 
 li = []
 
@@ -38,10 +38,13 @@ frame = pd.concat(li, axis=0, ignore_index=True)
 # And now to cleanup results, and remove duplicates
 
 wines = frame
+
+wines.columns = ['URL']
+
 # And now I'll filter out the product linkes
 wines = wines[wines.URL.str.contains('https://www.danmurphys.com.au/product',case=False, na=False)]
 
-wines = wines.replace(r'https://www.danmurphys.com.au/product/DM_', r'', regex=True)
+wines = wines.replace(r'.*https://www.danmurphys.com.au/product/DM_', r'', regex=True)
 wines = wines.replace(r'/.*$', r'', regex=True)
 wines = wines.drop_duplicates()
 wines = wines.dropna()

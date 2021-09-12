@@ -61,7 +61,6 @@ with open(file, "w") as csvFile:
             writer.writerow({'URL': elem.get_attribute("href")})
         driver.close()
 
-        https://www.danmurphys.com.au/search?searchTerm=wraps&page=2
 
     for item in range(1,20):
         driver = webdriver.Firefox(options=options,executable_path=r'/usr/local/bin/geckodriver')

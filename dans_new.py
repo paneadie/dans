@@ -33,6 +33,11 @@ def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
 
     ###********NEW> LIMIT TO WINES ONLY
     my_df = my_df[my_df['Categories'].isin(['red-wine', 'white-wine'])]
+
+    ## WORK AROUND> NOT SURE WHY. TODO
+    my_df = my_df[my_df['Stockcode'] != 'ER_2000003422_RX2386']
+    my_df = my_df[my_df['Stockcode'] != 'ER_1000004375_CALSG16']
+
     
 
     ## Reviews
@@ -72,7 +77,7 @@ def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
 
     # Check point, and also a way to get rid of headers
     newdf = pd.merge(full_df, df, on='Stockcode')
-    newdf["Mystery"] = newdf["Description"].str.contains("Wraps")
+    newdf["Mystery"] = newdf["Description"].str.lower().str.contains("wraps")
     # This is an old secret seleciton one. Only two, so will drop them
     newdf = newdf[~newdf["Description"].str.contains("Secret Selection")]
     newdf = newdf[~newdf["Stockcode"].str.contains("672366")]
@@ -85,8 +90,9 @@ def giveaway(df):
     gives = df.copy(deep=True)
     gives = gives[['Stockcode','Description','webproductname','Prices.singleprice.Value','Prices.promoprice.Value','Prices.promoprice.BeforePromotion','Prices.promoprice.AfterPromotion','IsForDelivery']]
     gives = gives[gives.webproductname.notnull()]
-    gives = gives[gives["Description"].str.contains("Wraps")]
-    gives = gives[~gives["webproductname"].str.contains("Wraps")]
+    gives = gives[gives.webproductname.notna()]
+    gives = gives[gives["Description"].str.lower().str.contains("wraps")]
+    gives = gives[~gives["webproductname"].str.lower().str.contains("wraps")]
     gives = gives[gives["IsForDelivery"]]
     gives["METHOD"] = "giveaway"
     return gives
@@ -160,7 +166,8 @@ def lazy_desc(df, keep1):
     kept.reset_index(drop=True, inplace=True)
     myst = kept[kept["Mystery"]]
     known = kept[~kept["Mystery"]]
-
+    known[known["Review1_text"] != "[...]"]
+    known[known["Review2_text"] != "[...]"]
     # Description match
     desc_match = pd.merge(myst[myst['RichDescription'].notna()], known, on=['RichDescription'], how='inner')
     desc_match["METHOD"] = "desc_match"
@@ -291,11 +298,12 @@ gives = giveaway(wide)
 lazy = lazy_desc(wide,keep_nlp)
 
 #now the OHE and KNN
-ohe_file = ohe(wide[keep_ohe])
-knns = get_knn(ohe_file,1.8)
+#ohe_file = ohe(wide[keep_ohe])
+#knns = get_knn(ohe_file,.0)
 
 # Cleanup and save it
-matches = knns.append(lazy)
+#matches = knns.append(lazy)
+matches = lazy
 
 # Check if its in stock
 avail = wide[wide["IsForDelivery"]][["Stockcode",'varietal','Prices.singleprice.Value','Prices.promoprice.Value','Prices.promoprice.BeforePromotion','Prices.promoprice.AfterPromotion']]
@@ -316,16 +324,16 @@ matches = matches.drop_duplicates()
 csv_file = "Match_results" + time.strftime("%Y%m%d") + ".csv"
 matches.to_csv(csv_file)
 
-from datetime import date, timedelta  
-yesterday = date.today() - timedelta(days=1) 
-today = date.today()   
-file_yes = "Match_results" + yesterday.strftime("%Y%m%d") + ".csv" 
-file_tod = "Match_results" + today.strftime("%Y%m%d") + ".csv"
-df1 = pd.read_csv(file_yes).iloc[:, 1:]
-df2 = pd.read_csv(file_tod).iloc[:, 1:]
-df_diff = pd.concat([df1,df2]).drop_duplicates(keep=False)
+#from datetime import date, timedelta  
+#yesterday = date.today() - timedelta(days=1) 
+#today = date.today()   
+#file_yes = "Match_results" + yesterday.strftime("%Y%m%d") + ".csv" 
+#file_tod = "Match_results" + today.strftime("%Y%m%d") + ".csv"
+#df1 = pd.read_csv(file_yes).iloc[:, 1:]
+#df2 = pd.read_csv(file_tod).iloc[:, 1:]
+#df_diff = pd.concat([df1,df2]).drop_duplicates(keep=False)
 
-matches = df_diff
+#matches = df_diff
 
 
 final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make_clickable, }) \
