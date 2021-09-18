@@ -25,7 +25,7 @@ import glob
 # Here we'll loop through all files and blend them into one.
 
 path = r'/home/stu/code/dans' # use your path
-all_files = glob.glob(path + "/sitemap.csv")
+all_files = glob.glob(path + "/new.wines")
 
 li = []
 
@@ -49,7 +49,17 @@ wines = wines.replace(r'/.*$', r'', regex=True)
 wines = wines.drop_duplicates()
 wines = wines.dropna()
 
+# Get the existing mysteries and call again
+stockcode = pd.read_csv("Stockocdes.csv", index_col=None, header=0)
+
+#
+wines.append(stockcode)
+
+
 #And now to call the API
+
+
+
 
 #wines
 #mylist = df['Cleaned'].tolist()
