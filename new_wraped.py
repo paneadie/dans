@@ -16,73 +16,9 @@ regex = re.compile(r"\[|\]|<", re.IGNORECASE)
 import time
 import copy
 from fuzzywuzzy import process, fuzz
-
-
-def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
-    # file_res = "API_results_20210823.csv"
-    my_df = pd.read_csv(file_res, error_bad_lines=False)
-
-    ## Categories
-    # my_df["Categories"]
-    # Willnjust keep 2 levels.
-    my_df["Categories"] = my_df["Categories"].map(eval, na_action='ignore')
-    new_df = my_df["Categories"].apply(pd.Series)
-    my_df["Categories"] = new_df[0].apply(pd.Series).UrlFriendlyName
-    my_df["Sub_Categories"] = new_df[1].apply(pd.Series).UrlFriendlyName
-
-
-    ###********NEW> LIMIT TO WINES ONLY
-    my_df = my_df[my_df['Categories'].isin(['red-wine', 'white-wine'])]
-    
-    ## WORK AROUND> NOT SURE WHY. TODO
-    my_df = my_df[my_df['Stockcode'] != 'ER_2000003422_RX2386']
-    my_df = my_df[my_df['Stockcode'] != 'ER_1000004375_CALSG16']
-
-
-    ## Reviews
-    my_df["Reviews"] = my_df["Reviews"].map(eval, na_action='ignore')
-    # Try with first 2 reviews
-    new_df = my_df["Reviews"].apply(pd.Series)
-    # First
-    my_df["Review1_auth"] = new_df[0].apply(pd.Series).author.apply(pd.Series).Value
-    my_df["Review1_authorcontent"] = new_df[0].apply(pd.Series).authorcontent.apply(pd.Series).Value
-    my_df["Review1_points"] = new_df[0].apply(pd.Series).points.apply(pd.Series).Value
-    my_df["Review1_source"] = new_df[0].apply(pd.Series).source.apply(pd.Series).Value
-    my_df["Review1_text"] = new_df[0].apply(pd.Series).text.apply(pd.Series).Value
-    my_df["Review1_vintage"] = new_df[0].apply(pd.Series).vintage.apply(pd.Series).Value
-    # Second
-    my_df["Review2_auth"] = new_df[1].apply(pd.Series).author.apply(pd.Series).Value
-    my_df["Review2_authorcontent"] = new_df[1].apply(pd.Series).authorcontent.apply(pd.Series).Value
-    my_df["Review2_points"] = new_df[1].apply(pd.Series).points.apply(pd.Series).Value
-    my_df["Review2_source"] = new_df[1].apply(pd.Series).source.apply(pd.Series).Value
-    my_df["Review2_text"] = new_df[1].apply(pd.Series).text.apply(pd.Series).Value
-    my_df["Review2_vintage"] = new_df[1].apply(pd.Series).vintage.apply(pd.Series).Value
-
-    # Illl make a deep copy for later
-    full_df = copy.deepcopy(my_df)
-    # full_df = full_df
-
-    # Additional details
-    my_df["AdditionalDetails"] = my_df["AdditionalDetails"].map(eval, na_action='ignore')
-    # Can't use nested lists of JSON objects in pd.json_normalize
-    my_df = my_df.explode(column="AdditionalDetails").reset_index(drop=True)
-
-    # Hacky, but it works... so we wont be touching this stuff!
-    add_df = pd.DataFrame(pd.json_normalize(my_df["AdditionalDetails"]))
-    del add_df["DisplayName"]
-    df = pd.concat([my_df, add_df], axis=1)
-    df = df.pivot(index='Stockcode', columns='Name', values='Value').reset_index().drop_duplicates(subset=['Stockcode'],
-                                                                                                   keep=False)
-
-    # Check point, and also a way to get rid of headers
-    newdf = pd.merge(full_df, df, on='Stockcode')
-    newdf["Mystery"] = newdf["Description"].str.contains("Wraps")
-    # This is an old secret seleciton one. Only two, so will drop them
-    newdf = newdf[~newdf["Description"].str.contains("Secret Selection")]
-    newdf = newdf[~newdf["Stockcode"].str.contains("672366")]
-    # newdf = newdf.drop_duplicates(subset=['Stockcode'], keep=False)
-    return newdf
-
+from sqlalchemy import create_engine
+import pymysql
+import pandas as pd
 
 
 def giveaway(df):
@@ -296,16 +232,30 @@ keep_nlp =['Categories',
 
 
 #### RUNNING HERE
+user = 'root'
+passw = 'MYSQLl0g1n!'
+host =  '127.0.0.1'
+port = 3306
+database = 'dans_dev'
+sqlEngine = create_engine('mysql+mysqlconnector://' + user + ':' + passw + '@' + host + ':' + str(port) + '/' + database , echo=False)
+dbConnection    = sqlEngine.connect()
 
-input_file = "API_results_" + time.strftime("%Y%m%d") + ".csv"
-wide = load_n_explode(input_file)
+sql = "With latest as (select Stockcode, max(ts_activity) ts_activity from raw_dans_raw_main group by Stockcode) select rdrm.* from raw_dans_raw_main rdrm, latest l where 1=1 and rdrm.Stockcode=l.Stockcode and rdrm.ts_activity=l.ts_activity ;"
+
+wide = pd.read_sql(sql, dbConnection)
+wide = wide.iloc[: , 2:]
+
+wide["IsForDelivery"] = wide["IsForDelivery"].astype(bool)
+wide["Mystery"] = wide["Mystery"].astype(bool)
+
+
 
 ## Get last runs
-input_file = "previous.csv"
-prev = load_n_explode(input_file)
+#input_file = "/home/stu/code/dans/files/previous.csv"
+#prev = load_n_explode(input_file)
 
 ## 
-wide = prev.append(wide)
+#wide = prev.append(wide)
  
 
 ## Get the easy matches
@@ -346,20 +296,36 @@ myst = myst[["Stockcode",'Description','varietal_x','webbottleclosure_x','Prices
 myst = myst.sort_values(['Savings'], ascending=[False])
 
 
-csv_file = "Match_results" + time.strftime("%Y%m%d") + ".csv"
-matches.to_csv(csv_file)
+#csv_file = "Match_results" + time.strftime("%Y%m%d") + ".csv"
+#matches.to_csv(csv_file)
 
 from datetime import date, timedelta  
-yesterday = date.today() - timedelta(days=1) 
-today = date.today()   
-file_yes = "Match_results" + yesterday.strftime("%Y%m%d") + ".csv" 
-file_tod = "Match_results" + today.strftime("%Y%m%d") + ".csv"
-df1 = pd.read_csv(file_yes).iloc[:, 1:]
-df2 = pd.read_csv(file_tod).iloc[:, 1:]
-df_diff = pd.concat([df1,df2]).drop_duplicates(keep=False)
+## Taken out 24.10.2021
+#yesterday = date.today() - timedelta(days=1) 
+#today = date.today()   
+#file_yes = "Match_results" + yesterday.strftime("%Y%m%d") + ".csv" 
+#file_tod = "Match_results" + today.strftime("%Y%m%d") + ".csv"
+#df1 = pd.read_csv(file_yes).iloc[:, 1:]
+#df2 = pd.read_csv(file_tod).iloc[:, 1:]
+#df_diff = pd.concat([df1,df2]).drop_duplicates(keep=False)
 
-matches = df_diff
-matches.reset_index(drop=True, inplace=True)
+#matches = df_diff
+#matches.reset_index(drop=True, inplace=True)
+
+tableName = "match_results"
+
+try:
+    frame           = matches.to_sql(tableName, dbConnection, if_exists='append', method='multi', chunksize = 1000 );
+except ValueError as vx:
+    print(vx)
+except Exception as ex:   
+    print(ex)
+else:
+    print("Table %s created/updated successfully."%tableName);   
+#finally:
+#    dbConnection.close()
+
+
 
 final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make_clickable, }) \
     .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
@@ -370,31 +336,45 @@ final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make
 # Now complete list
 myst.reset_index(drop=True, inplace=True)
 
-final_myst = myst.style.format({'Stockcode': make_clickable }) \
-    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
-    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
-    .hide_index()
+tableName = "all_deals"
+
+try:
+    frame           = myst.to_sql(tableName, dbConnection, if_exists='append', method='multi', chunksize = 1000 );
+except ValueError as vx:
+    print(vx)
+except Exception as ex:   
+    print(ex)
+else:
+    print("Table %s created/updated successfully."%tableName);   
+    
+    
+## Formatting   # Commented out 24/10/2021
+
+#final_myst = myst.style.format({'Stockcode': make_clickable }) \
+#    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
+#    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
+#    .hide_index()
 
 
-#writing HTML Content
-heading = '<h1> Mystery Wines</h1>'
-subheading = '<h3> Matched </h3>'
-# Using .now() from datetime library to add Time stamp
-now = datetime.now()
-current_time = now.strftime("%m/%d/%Y %H:%M:%S")
-header = '<div class="top">' + heading + subheading +'</div>'
-footer = '<div class="bottom"> <h3> This Report has been Generated on'+ current_time +'</h3> </div>'
-content = final
-content_2 = final_myst
-# Concating everything to a single string
+##writing HTML Content
+#heading = '<h1> Mystery Wines</h1>'
+#subheading = '<h3> Matched </h3>'
+## Using .now() from datetime library to add Time stamp
+#now = datetime.now()
+#current_time = now.strftime("%m/%d/%Y %H:%M:%S")
+#header = '<div class="top">' + heading + subheading +'</div>'
+#footer = '<div class="bottom"> <h3> This Report has been Generated on'+ current_time +'</h3> </div>'
+#content = final
+#content_2 = final_myst
+## Concating everything to a single string
 
-html = header + content.render() + footer
-html_file = "Match_new.html"
-with open(html_file,'w+') as file:
-    file.write(html)
+#html = header + content.render() + footer
+#html_file = "Match_new.html"
+#with open(html_file,'w+') as file:
+#    file.write(html)
 
 
-html = header + content_2.render()  + footer
-html_file = "All_deals.html"
-with open(html_file,'w+') as file:
-    file.write(html)    
+#html = header + content_2.render()  + footer
+#html_file = "All_deals.html"
+#with open(html_file,'w+') as file:
+#    file.write(html)    

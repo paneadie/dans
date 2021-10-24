@@ -24,7 +24,7 @@ import glob
 
 # Here we'll loop through all files and blend them into one.
 
-path = r'/home/stu/code/dans' # use your path
+path = r'/home/stu/code/dans/files' # use your path
 all_files = glob.glob(path + "/new.wines")
 
 li = []
@@ -50,10 +50,11 @@ wines = wines.drop_duplicates()
 wines = wines.dropna()
 
 # Get the existing mysteries and call again
-stockcode = pd.read_csv("Stockocdes.csv", index_col=None, header=0)
+stockcode = pd.read_csv(path + "/Stockcodes.csv", index_col=None, header=0)
 
 #
-wines.append(stockcode)
+stockcode = stockcode.rename(columns={'Stockcode': 'URL'})
+wines = wines.append(stockcode)
 
 
 #And now to call the API
@@ -78,7 +79,7 @@ for wine in mylist:
         print("No product found")
 
 my_df = pd.concat(result)
-file_res = "API_results_" + time.strftime("%Y%m%d") + ".csv"
+file_res = path + "/API_results_" + time.strftime("%Y%m%d") + ".csv"
+
 my_df.to_csv(file_res)
-#pd.json_normalize(flatten(r))
 

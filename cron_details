@@ -1,0 +1,32 @@
+# Edit this file to introduce tasks to be run by cron.
+# 
+# Each task to run has to be defined through a single line
+# indicating with different fields when the task will be run
+# and what command to run for the task
+# 
+# To define the time you can provide concrete values for
+# minute (m), hour (h), day of month (dom), month (mon),
+# and day of week (dow) or use '*' in these fields (for 'any').
+# 
+# Notice that tasks will be started based on the cron's system
+# daemon's notion of time and timezones.
+# 
+# Output of the crontab jobs (including errors) is sent through
+# email to the user the crontab file belongs to (unless redirected).
+# 
+# For example, you can run a backup of all your user accounts
+# at 5 a.m every week with:
+# 0 5 * * 1 tar -zcf /var/backups/home.tgz /home/
+# 
+# For more information see the manual pages of crontab(5) and cron(8)
+# 
+# m h  dom mon dow   command
+SHELL=/bin/bash
+BASH_ENV=~/.bashrc_conda
+##46 09 * * * conda activate base; cd /home/stu/code/dans; python white_scraper.py ; conda deactivate >> out.txt  2>&1
+#43 16 * * * cd /home/stu/code/dans/files; curl https://www.danmurphys.com.au/sitemap/ProductSitemap.xml  > sitemap_$(date +\%Y\%m\%d).xml 
+#44 16 * * * cd /home/stu/code/dans/files; cat sitemap_$(date +\%Y\%m\%d).xml | grep https://www.danmurphys.com.au/product | sed -E 's/.*<loc>//' > sitemap_$(date +\%Y\%m\%d).csv
+#59 16 * * * cd /home/stu/code/dans/files; grep -Fvxf sitemap_$(date -d "-1 days" +\%Y\%m\%d).csv sitemap_$(date +\%Y\%m\%d).csv > new.wines 2>&1
+#13 17 * * * conda activate base; cd /home/stu/code/dans; python apier.py ; conda deactivate >> out.txt  2>&1
+##53 15 * * * conda activate base; cd /home/stu/code/dans; python dans_wrapped.py ; conda deactivate >> out.txt  2>&1
+##30 16 * * * conda activate base; cd /home/stu/code/dans; python emailer.py ; conda deactivate >> out.txt  2>&1
