@@ -6,6 +6,16 @@ from oauth2client import client, tools, file
 import base64
 from email import encoders
 import codecs
+from pretty_html_table import build_table
+import io
+from sqlalchemy import create_engine
+import pymysql
+import pandas as pd
+import re
+regex = re.compile(r"\[|\]|<", re.IGNORECASE)
+import time
+import copy
+
 
 #needed for attachment
 import smtplib  
@@ -88,13 +98,13 @@ def create_message_and_send(sender, to, subject,  message_text_plain, message_te
     service = discovery.build('gmail', 'v1', http=http)
 
     ## without attachment
-    message_without_attachment = create_message_without_attachment(sender, to, subject, message_text_html, message_text_plain)
-    send_Message_without_attachment(service, "me", message_without_attachment, message_text_plain)
+    #message_without_attachment = create_message_without_attachment(sender, to, subject, message_text_html, message_text_plain)
+    #send_Message_without_attachment(service, "me", message_without_attachment, message_text_plain)
 
 
     ## with attachment
-    # message_with_attachment = create_Message_with_attachment(sender, to, subject, message_text_plain, message_text_html, attached_file)
-    # send_Message_with_attachment(service, "me", message_with_attachment, message_text_plain,attached_file)
+    message_with_attachment = create_Message_with_attachment(sender, to, subject, message_text_plain, message_text_html, attached_file)
+    send_Message_with_attachment(service, "me", message_with_attachment, message_text_plain,attached_file)
 
 def create_message_without_attachment (sender, to, subject, message_text_html, message_text_plain):
     #Create message container
@@ -253,18 +263,173 @@ def send_Message_with_attachment(service, user_id, message_with_attachment, mess
 
 
 def main(f):
-    #to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com"
-    to = "stuartvandegiessen@gmail.com"
+    to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com"
+    #to = "stuartvandegiessen@gmail.com"
     sender = "stuart@vandegiessen.net"
-    subject = "Froogle - Todays added deals"
+    subject = "Dan's Wine Solver? - Todays added deals"
     message_text_html  = file1
     message_text_plain = "You need to view this email in HTML."
-    attached_file = r''
+    attached_file = file2
     create_message_and_send(sender, to, subject, message_text_plain, message_text_html, attached_file)
 
-path="/home/stu/code/dans/Match_new.html"
-file=codecs.open(path,"rb")
-file1=file.read()
+    
+    
+    
+### Here we build up the files, and then send it.
+
+def make_clickable(val):
+    # target _blank to open new window
+    if re.match(str(val), 'None'):
+        link = "None"
+    else:
+        val1 = 'https://www.danmurphys.com.au/product/' + str(val)
+        link = '<a target="_blank" href="{}">{}</a>'.format(val1,"Link")
+    return link
+
+
+#### RUNNING HERE
+user = 'root'
+passw = 'MYSQLl0g1n!'
+host =  '127.0.0.1'
+port = 3306
+database = 'dans_dev'
+sqlEngine = create_engine('mysql+mysqlconnector://' + user + ':' + passw + '@' + host + ':' + str(port) + '/' + database , echo=False)
+dbConnection    = sqlEngine.connect()
+
+sql_myst_today = """\
+--  Here we have the  mystery from wines this week
+With latest as (select Stockcode, ts_activity
+from raw_dans_raw_main
+where date(ts_activity)= curdate())
+
+select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+	from raw_dans_raw_main r
+    left outer join match_results m
+    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
+	where r.Stockcode in (
+	select l.Stockcode from latest l
+	where 1=1
+    and Mystery=1
+    and isForDelivery =1 
+	and l.Stockcode not in (select mr.Stockcode 
+								from raw_dans_raw_main mr, latest l 
+								where mr.ts_activity!=l.ts_activity
+                            and l.Stockcode = mr.Stockcode))
+	and r.`Prices.promoprice.AfterPromotion` is not null
+order by varietal DESC, SAVINGS DESC;
+"""
+
+sql_myst_week_promo = """\
+-- Lastest week with promo
+With latest as (select Stockcode, ts_activity
+from raw_dans_raw_main
+where date(ts_activity)> curdate()-7)
+
+select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+	from raw_dans_raw_main r
+    left outer join match_results m
+    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
+	where r.Stockcode in (
+	select l.Stockcode from latest l
+	where 1=1
+    and Mystery=1
+    and isForDelivery =1 
+	and l.Stockcode not in (select mr.Stockcode 
+								from raw_dans_raw_main mr, latest l 
+								where mr.ts_activity!=l.ts_activity
+                            and l.Stockcode = mr.Stockcode))
+	and r.`Prices.promoprice.AfterPromotion` is not null
+order by varietal DESC, SAVINGS DESC;
+"""
+
+sql_myst_week_no_promo = """\
+--  Here we the latest week without promo
+With latest as (select Stockcode, ts_activity
+from raw_dans_raw_main
+where date(ts_activity)> curdate()-7)
+
+select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+	from raw_dans_raw_main r
+    left outer join match_results m
+    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
+	where r.Stockcode in (
+	select l.Stockcode from latest l
+	where 1=1
+    and Mystery=1
+    and isForDelivery =1 
+	and l.Stockcode not in (select mr.Stockcode 
+								from raw_dans_raw_main mr, latest l 
+								where mr.ts_activity!=l.ts_activity
+                            and l.Stockcode = mr.Stockcode))
+	and r.`Prices.promoprice.AfterPromotion` is  null
+order by varietal DESC, SAVINGS DESC;
+"""
+
+
+sql_myst_all = """\
+With latest as (select Stockcode, ts_activity
+from raw_dans_raw_main
+where date(ts_activity) = curdate())
+
+select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+	from raw_dans_raw_main r
+    left outer join match_results m
+    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
+	where r.ts_activity = (select max(ts_activity) from raw_dans_raw_main)
+	and Mystery=1
+    and isForDelivery =1 
+order by varietal DESC, SAVINGS DESC;
+"""
+
+myst_day = pd.read_sql(sql_myst_today, dbConnection)
+#myst_day = myst_day.iloc[: , 2:]
+myst_week_p = pd.read_sql(sql_myst_week_promo, dbConnection)
+#myst_day = myst_day.iloc[: , 2:]
+myst_week_np = pd.read_sql(sql_myst_week_no_promo, dbConnection)
+#myst_day = myst_day.iloc[: , 2:]
+myst_active =  pd.read_sql(sql_myst_all, dbConnection)
+
+myst_day = myst_day.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
+    .background_gradient(cmap='Blues') \
+    .hide_index()
+
+myst_week_p = myst_week_p.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
+    .background_gradient(cmap='Blues') \
+    .hide_index()
+
+myst_week_np = myst_week_np.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
+    .background_gradient(cmap='Blues') \
+    .hide_index()
+
+myst_active = myst_active.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
+    .background_gradient(cmap='Blues') \
+    .hide_index()
+
+
+
+heading = '<h1> Mystery Wines</h1>'
+subheading1 = '<h3> <br> <br> New mystery wines today </h3>'
+subheading2 = '<h3> <br> <br> New mystery wines this week - with clear promo <br> <br></h3>'
+subheading3 = '<h3> <br> <br> New mystery wines this week - Not sure about promo <br> <br></h3>'
+subheading4 = '<h3> <br> <br> All active mystery wines <br> <br></h3>'
+
+html=heading + subheading1 + myst_day.render() + subheading2 + myst_week_p.render() + subheading3 + myst_week_np.render() + subheading4 + myst_active.render()
+html_file = "/home/stu/code/dans/files/myst.html"
+with open(html_file,'w') as file:
+    file.write(html)
+
+    
+#path="/home/stu/code/dans/Match_new.html"
+path1="/home/stu/code/dans/sample_mail.html"
+#file1="/home/stu/code/dans/sample_mail.html"
+file1=codecs.open(path1,"r")
+file1=file1.read()
 file1=str(file1)
+
+
+file2=html_file
+#file2=codecs.open(path2,"rb")
+#file2=file2.read()
+#file2=str(file2)
 
 main(file1)

@@ -288,12 +288,12 @@ matches = matches.loc[:,~matches.columns.duplicated()]
 matches = matches.drop_duplicates()
 
 ## General available
-myst = wide[wide["Mystery"]]
-myst["Savings"] = myst['Prices.promoprice.BeforePromotion'] - myst['Prices.promoprice.AfterPromotion']
-myst =  pd.merge(avail,myst, left_on='Stockcode', right_on="Stockcode")
-myst = myst[["Stockcode",'Description','varietal_x','webbottleclosure_x','Prices.promoprice.BeforePromotion_x', 'Prices.promoprice.AfterPromotion_x', 'Savings' ]]
-myst = myst[["Stockcode",'Description','varietal_x','webbottleclosure_x','Prices.promoprice.BeforePromotion_x', 'Prices.promoprice.AfterPromotion_x', 'Savings' ]]
-myst = myst.sort_values(['Savings'], ascending=[False])
+#myst = wide[wide["Mystery"]]
+#myst["Savings"] = myst['Prices.promoprice.BeforePromotion'] - myst['Prices.promoprice.AfterPromotion']
+#myst =  pd.merge(avail,myst, left_on='Stockcode', right_on="Stockcode")
+#myst = myst[["Stockcode",'Description','varietal_x','webbottleclosure_x','Prices.promoprice.BeforePromotion_x', 'Prices.promoprice.AfterPromotion_x', 'Savings' ]]
+#myst = myst[["Stockcode",'Description','varietal_x','webbottleclosure_x','Prices.promoprice.BeforePromotion_x', 'Prices.promoprice.AfterPromotion_x', 'Savings' ]]
+#myst = myst.sort_values(['Savings'], ascending=[False])
 
 
 #csv_file = "Match_results" + time.strftime("%Y%m%d") + ".csv"
@@ -312,6 +312,8 @@ from datetime import date, timedelta
 #matches = df_diff
 #matches.reset_index(drop=True, inplace=True)
 
+
+
 tableName = "match_results"
 
 try:
@@ -327,25 +329,25 @@ else:
 
 
 
-final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make_clickable, }) \
-    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
-    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
-    .hide_index()
+#final = matches.style.format({'Stockcode_x': make_clickable, 'Stockcode_y': make_clickable, }) \
+#    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
+#    .bar(subset=['Savings'], align='mid', color=['#5fba7d']) \
+#    .hide_index()
 
 
 # Now complete list
-myst.reset_index(drop=True, inplace=True)
+#myst.reset_index(drop=True, inplace=True)
 
-tableName = "all_deals"
+#tableName = "all_deals"
 
-try:
-    frame           = myst.to_sql(tableName, dbConnection, if_exists='append', method='multi', chunksize = 1000 );
-except ValueError as vx:
-    print(vx)
-except Exception as ex:   
-    print(ex)
-else:
-    print("Table %s created/updated successfully."%tableName);   
+#try:
+#    frame           = myst.to_sql(tableName, dbConnection, if_exists='append', method='multi', chunksize = 1000 );
+#except ValueError as vx:
+#    print(vx)
+#except Exception as ex:   
+#    print(ex)
+#else:
+#    print("Table %s created/updated successfully."%tableName);   
     
     
 ## Formatting   # Commented out 24/10/2021
@@ -356,17 +358,17 @@ else:
 #    .hide_index()
 
 
-##writing HTML Content
+#writing HTML Content
 #heading = '<h1> Mystery Wines</h1>'
 #subheading = '<h3> Matched </h3>'
-## Using .now() from datetime library to add Time stamp
+# Using .now() from datetime library to add Time stamp
 #now = datetime.now()
 #current_time = now.strftime("%m/%d/%Y %H:%M:%S")
 #header = '<div class="top">' + heading + subheading +'</div>'
 #footer = '<div class="bottom"> <h3> This Report has been Generated on'+ current_time +'</h3> </div>'
 #content = final
 #content_2 = final_myst
-## Concating everything to a single string
+# Concating everything to a single string
 
 #html = header + content.render() + footer
 #html_file = "Match_new.html"
