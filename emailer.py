@@ -263,8 +263,8 @@ def send_Message_with_attachment(service, user_id, message_with_attachment, mess
 
 
 def main(f):
-    to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com"
-    #to = "stuartvandegiessen@gmail.com"
+    #to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com"
+    to = "stuartvandegiessen@gmail.com"
     sender = "stuart@vandegiessen.net"
     subject = "Dan's Wine Solver? - Todays added deals"
     message_text_html  = file1

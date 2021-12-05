@@ -21,6 +21,9 @@ from selenium.webdriver.firefox.options import Options
 import time
 
 import glob
+from sqlalchemy import create_engine
+import pymysql
+
 
 # Here we'll loop through all files and blend them into one.
 
@@ -49,22 +52,31 @@ wines = wines.replace(r'/.*$', r'', regex=True)
 wines = wines.drop_duplicates()
 wines = wines.dropna()
 
-# Get the existing mysteries and call again
-stockcode = pd.read_csv(path + "/Stockcodes.csv", index_col=None, header=0)
+#Get the existing mysteries and call again
+#### RUNNING HERE
+user = 'root'
+passw = 'MYSQLl0g1n!'
+host =  '127.0.0.1'
+port = 3306
+database = 'dans_dev'
+sqlEngine = create_engine('mysql+mysqlconnector://' + user + ':' + passw + '@' + host + ':' + str(port) + '/' + database , echo=False)
+dbConnection    = sqlEngine.connect()
 
-#
+stockcode_sql = """\
+--  
+select distinct(Stockcode) from raw_dans_raw_main where Mystery=1;
+"""
+
+stockcode = pd.read_sql(stockcode_sql, dbConnection)
+
 stockcode = stockcode.rename(columns={'Stockcode': 'URL'})
 wines = wines.append(stockcode)
 
 
 #And now to call the API
 
-
-
-
-#wines
-#mylist = df['Cleaned'].tolist()
 mylist = wines['URL'].tolist()
+
 
 #ylist = mylist[0:100]
 result = []
@@ -76,7 +88,7 @@ for wine in mylist:
         rtoo = pd.json_normalize(r["Products"])
         result.append(rtoo)
     except:
-        print("No product found")
+        print("No product found" + url)
 
 my_df = pd.concat(result)
 file_res = path + "/API_results_" + time.strftime("%Y%m%d") + ".csv"

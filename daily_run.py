@@ -59,9 +59,18 @@ def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
         my_df["Review1_vintage"] = ""
         
     # Second
-    my_df["Review2_auth"] = new_df[1].apply(pd.Series).author.apply(pd.Series).Value
-    my_df["Review2_authorcontent"] = new_df[1].apply(pd.Series).authorcontent.apply(pd.Series).Value
-    my_df["Review2_points"] = new_df[1].apply(pd.Series).points.apply(pd.Series).Value
+    try:
+        my_df["Review2_auth"] = new_df[1].apply(pd.Series).author.apply(pd.Series).Value
+    except:
+        my_df["Review2_auth"] = ""
+    try:
+        my_df["Review2_authorcontent"] = new_df[1].apply(pd.Series).authorcontent.apply(pd.Series).Value
+    except:
+        my_df["Review2_authorcontent"] = ""
+    try:
+        my_df["Review2_points"] = new_df[1].apply(pd.Series).points.apply(pd.Series).Value
+    except:
+        my_df["Review2_points"] = ""  
     try:
         my_df["Review2_source"] = new_df[1].apply(pd.Series).source.apply(pd.Series).Value
     except:
@@ -84,6 +93,7 @@ def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
 
     # Additional details
     my_df["AdditionalDetails"] = my_df["AdditionalDetails"].map(eval, na_action='ignore')
+    my_df = my_df.drop_duplicates(subset='Stockcode', keep="last")
     # Can't use nested lists of JSON objects in pd.json_normalize
     my_df = my_df.explode(column="AdditionalDetails").reset_index(drop=True)
 
