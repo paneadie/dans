@@ -263,10 +263,10 @@ def send_Message_with_attachment(service, user_id, message_with_attachment, mess
 
 
 def main(f):
-    #to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com"
-    to = "stuartvandegiessen@gmail.com"
+    to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com"
+    #to = "stuartvandegiessen@gmail.com"
     sender = "stuart@vandegiessen.net"
-    subject = "Dan's Wine Solver? - Todays added deals"
+    subject = "Dan's Wine Solver? - Todays added deals - App friendly"
     message_text_html  = file1
     message_text_plain = "You need to view this email in HTML."
     attached_file = file2
@@ -297,25 +297,21 @@ sqlEngine = create_engine('mysql+mysqlconnector://' + user + ':' + passw + '@' +
 dbConnection    = sqlEngine.connect()
 
 sql_myst_today = """\
---  Here we have the  mystery from wines this week
+--  Here we have the mystery from wines today
 With latest as (select Stockcode, ts_activity
 from raw_dans_raw_main
 where date(ts_activity)= curdate())
 
-select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
     on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.Stockcode in (
-	select l.Stockcode from latest l
-	where 1=1
+	where r.Stockcode not in (select mr.Stockcode 
+								from raw_dans_raw_main mr
+								where date(mr.ts_activity) < curdate())
+	-- and r.`Prices.promoprice.AfterPromotion` is not null
     and Mystery=1
     and isForDelivery =1 
-	and l.Stockcode not in (select mr.Stockcode 
-								from raw_dans_raw_main mr, latest l 
-								where mr.ts_activity!=l.ts_activity
-                            and l.Stockcode = mr.Stockcode))
-	and r.`Prices.promoprice.AfterPromotion` is not null
 order by varietal DESC, SAVINGS DESC;
 """
 
@@ -325,21 +321,17 @@ With latest as (select Stockcode, ts_activity
 from raw_dans_raw_main
 where date(ts_activity)> curdate()-7)
 
-select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
     on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.Stockcode in (
-	select l.Stockcode from latest l
-	where 1=1
+	where r.Stockcode not in (select mr.Stockcode 
+								from raw_dans_raw_main mr
+								where date(mr.ts_activity) < curdate() -7)
+	and r.`Prices.promoprice.AfterPromotion` is not null
     and Mystery=1
     and isForDelivery =1 
-	and l.Stockcode not in (select mr.Stockcode 
-								from raw_dans_raw_main mr, latest l 
-								where mr.ts_activity!=l.ts_activity
-                            and l.Stockcode = mr.Stockcode))
-	and r.`Prices.promoprice.AfterPromotion` is not null
-order by varietal DESC, SAVINGS DESC;
+	order by varietal DESC, SAVINGS DESC;
 """
 
 sql_myst_week_no_promo = """\
@@ -348,37 +340,31 @@ With latest as (select Stockcode, ts_activity
 from raw_dans_raw_main
 where date(ts_activity)> curdate()-7)
 
-select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
     on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.Stockcode in (
-	select l.Stockcode from latest l
-	where 1=1
+	where r.Stockcode not in (select mr.Stockcode 
+								from raw_dans_raw_main mr
+								where date(mr.ts_activity) < curdate() -7)
+	and r.`Prices.promoprice.AfterPromotion` is  null
     and Mystery=1
     and isForDelivery =1 
-	and l.Stockcode not in (select mr.Stockcode 
-								from raw_dans_raw_main mr, latest l 
-								where mr.ts_activity!=l.ts_activity
-                            and l.Stockcode = mr.Stockcode))
-	and r.`Prices.promoprice.AfterPromotion` is  null
-order by varietal DESC, SAVINGS DESC;
+	order by varietal DESC, SAVINGS DESC;
 """
 
 
 sql_myst_all = """\
-With latest as (select Stockcode, ts_activity
-from raw_dans_raw_main
-where date(ts_activity) = curdate())
-
-select r.varietal, Stockcode as "Mystery", Stockcode_y as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select  DATE_FORMAT(min(rmmin.ts_activity), "%Y %m %d")  AS "First Appeared", r.varietal, CONCAT("DM_", r.Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
-    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
+    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results), raw_dans_raw_main rmmin
 	where r.ts_activity = (select max(ts_activity) from raw_dans_raw_main)
-	and Mystery=1
-    and isForDelivery =1 
-order by varietal DESC, SAVINGS DESC;
+	and r.Mystery=1
+    and r.isForDelivery =1 
+    and r.Stockcode = rmmin.Stockcode
+group by r.varietal, r.Stockcode , Stockcode_y , r.Description,m.Description ,  r.`Prices.promoprice.Message` , r.`Prices.promoprice.BeforePromotion` , r.`Prices.promoprice.AfterPromotion` ,  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2), r.webbottleclosure, r.webdsvname , r.webstateoforigin , r.webvintagecurrent
+order by varietal DESC, min(rmmin.ts_activity) DESC, SAVINGS DESC;
 """
 
 myst_day = pd.read_sql(sql_myst_today, dbConnection)
