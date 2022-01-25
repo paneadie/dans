@@ -263,7 +263,7 @@ def send_Message_with_attachment(service, user_id, message_with_attachment, mess
 
 
 def main(f):
-    to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com"
+    to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com,peterhickie@hotmail.com,deanne.hoare@gmail.com"
     #to = "stuartvandegiessen@gmail.com"
     sender = "stuart@vandegiessen.net"
     subject = "Dan's Wine Solver? - Todays added deals - App friendly"
@@ -296,17 +296,19 @@ database = 'dans_dev'
 sqlEngine = create_engine('mysql+mysqlconnector://' + user + ':' + passw + '@' + host + ':' + str(port) + '/' + database , echo=False)
 dbConnection    = sqlEngine.connect()
 
+sql_latest_run = """\
+select max(ts_activity) 
+from raw_dans_raw_main;
+"""
+
 sql_myst_today = """\
 --  Here we have the mystery from wines today
-With latest as (select Stockcode, ts_activity
-from raw_dans_raw_main
-where date(ts_activity)= curdate())
-
-select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select r.varietal, CONCAT("DM_", r.Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
     on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.Stockcode not in (select mr.Stockcode 
+	where r.ts_activity = (select max(ts_activity) from raw_dans_raw_main)
+    and r.Stockcode not in (select mr.Stockcode 
 								from raw_dans_raw_main mr
 								where date(mr.ts_activity) < curdate())
 	-- and r.`Prices.promoprice.AfterPromotion` is not null
@@ -317,17 +319,14 @@ order by varietal DESC, SAVINGS DESC;
 
 sql_myst_week_promo = """\
 -- Lastest week with promo
-With latest as (select Stockcode, ts_activity
-from raw_dans_raw_main
-where date(ts_activity)> curdate()-7)
-
-select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select r.varietal, CONCAT("DM_", r.Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
     on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.Stockcode not in (select mr.Stockcode 
+	where r.ts_activity = (select max(ts_activity) from raw_dans_raw_main)
+    and r.Stockcode not in (select mr.Stockcode 
 								from raw_dans_raw_main mr
-								where date(mr.ts_activity) < curdate() -7)
+								where date(mr.ts_activity) < DATE_ADD(NOW(), INTERVAL -14 DAY) )
 	and r.`Prices.promoprice.AfterPromotion` is not null
     and Mystery=1
     and isForDelivery =1 
@@ -336,18 +335,15 @@ select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockco
 
 sql_myst_week_no_promo = """\
 --  Here we the latest week without promo
-With latest as (select Stockcode, ts_activity
-from raw_dans_raw_main
-where date(ts_activity)> curdate()-7)
-
-select r.varietal, CONCAT("DM_", Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
+select r.varietal, CONCAT("DM_", r.Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
     on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.Stockcode not in (select mr.Stockcode 
+	where r.ts_activity = (select max(ts_activity) from raw_dans_raw_main)
+    and r.Stockcode not in (select mr.Stockcode 
 								from raw_dans_raw_main mr
-								where date(mr.ts_activity) < curdate() -7)
-	and r.`Prices.promoprice.AfterPromotion` is  null
+								where date(mr.ts_activity) < DATE_ADD(NOW(), INTERVAL -14 DAY) )
+	and r.`Prices.promoprice.AfterPromotion` is null
     and Mystery=1
     and isForDelivery =1 
 	order by varietal DESC, SAVINGS DESC;
@@ -366,6 +362,8 @@ select  DATE_FORMAT(min(rmmin.ts_activity), "%Y %m %d")  AS "First Appeared", r.
 group by r.varietal, r.Stockcode , Stockcode_y , r.Description,m.Description ,  r.`Prices.promoprice.Message` , r.`Prices.promoprice.BeforePromotion` , r.`Prices.promoprice.AfterPromotion` ,  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2), r.webbottleclosure, r.webdsvname , r.webstateoforigin , r.webvintagecurrent
 order by varietal DESC, min(rmmin.ts_activity) DESC, SAVINGS DESC;
 """
+
+myst_run = pd.read_sql(sql_latest_run, dbConnection)
 
 myst_day = pd.read_sql(sql_myst_today, dbConnection)
 #myst_day = myst_day.iloc[: , 2:]
@@ -394,9 +392,9 @@ myst_active = myst_active.style.format({'Mystery': make_clickable, 'Solved?': ma
 
 
 heading = '<h1> Mystery Wines</h1>'
-subheading1 = '<h3> <br> <br> New mystery wines today </h3>'
-subheading2 = '<h3> <br> <br> New mystery wines this week - with clear promo <br> <br></h3>'
-subheading3 = '<h3> <br> <br> New mystery wines this week - Not sure about promo <br> <br></h3>'
+subheading1 = '<h3> <br> <br> New mystery wines today - latest run' + str(myst_run) +  '</h3>'
+subheading2 = '<h3> <br> <br> New mystery wines last fortnight - with clear promo <br> <br></h3>'
+subheading3 = '<h3> <br> <br> New mystery wines last fortnight - Not sure about promo <br> <br></h3>'
 subheading4 = '<h3> <br> <br> All active mystery wines <br> <br></h3>'
 
 html=heading + subheading1 + myst_day.render() + subheading2 + myst_week_p.render() + subheading3 + myst_week_np.render() + subheading4 + myst_active.render()
