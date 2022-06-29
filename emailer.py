@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+  #!/usr/bin/env python
 import httplib2
 import os
 import oauth2client
@@ -263,10 +263,10 @@ def send_Message_with_attachment(service, user_id, message_with_attachment, mess
 
 
 def main(f):
-    to = "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com,peterhickie@hotmail.com,deanne.hoare@gmail.com"
+    to =   "stuartvandegiessen@gmail.com,aaron6477@gmail.com,mbjh40@gmail.com,jeremy.hyatt@gmail.com,nickilievski@hotmail.com,peterhickie@hotmail.com,deanne.hoare@gmail.com,alison.ness6172@gmail.com,amitsharmas@yahoo.com"
     #to = "stuartvandegiessen@gmail.com"
     sender = "stuart@vandegiessen.net"
-    subject = "Dan's Wine Solver? - Todays added deals - App friendly"
+    subject = "Dan's Wine Solver? Version 0.2"
     message_text_html  = file1
     message_text_plain = "You need to view this email in HTML."
     attached_file = file2
@@ -306,8 +306,8 @@ sql_myst_today = """\
 select r.varietal, CONCAT("DM_", r.Stockcode)  as "Mystery", CONCAT("DM_", Stockcode_y ) as "Solved?", r.Description,m.Description "Solved Description?" ,  r.`Prices.promoprice.Message` as "Promo_type", r.`Prices.promoprice.BeforePromotion` as "Normal Price", r.`Prices.promoprice.AfterPromotion` as "Promo Price",  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2)as "Savings", r.webbottleclosure as "Closure", r.webdsvname AS "Likely_producer", r.webstateoforigin as "State", r.webvintagecurrent as "Vintage"
 	from raw_dans_raw_main r
     left outer join match_results m
-    on r.Stockcode = m.Stockcode_x and m.updated=(select max(updated) from match_results)
-	where r.ts_activity = (select max(ts_activity) from raw_dans_raw_main)
+    on r.Stockcode = m.Stockcode_x and DATE(m.updated)=(select max(DATE(updated)) from match_results)
+	where DATE(r.ts_activity) = (select max(DATE(ts_activity)) from raw_dans_raw_main)
     and r.Stockcode not in (select mr.Stockcode 
 								from raw_dans_raw_main mr
 								where date(mr.ts_activity) < curdate())
@@ -359,6 +359,7 @@ select  DATE_FORMAT(min(rmmin.ts_activity), "%Y %m %d")  AS "First Appeared", r.
 	and r.Mystery=1
     and r.isForDelivery =1 
     and r.Stockcode = rmmin.Stockcode
+    and r.`Prices.promoprice.AfterPromotion` is not null
 group by r.varietal, r.Stockcode , Stockcode_y , r.Description,m.Description ,  r.`Prices.promoprice.Message` , r.`Prices.promoprice.BeforePromotion` , r.`Prices.promoprice.AfterPromotion` ,  ROUND((r.`Prices.promoprice.BeforePromotion` - r.`Prices.promoprice.AfterPromotion`),2), r.webbottleclosure, r.webdsvname , r.webstateoforigin , r.webvintagecurrent
 order by varietal DESC, min(rmmin.ts_activity) DESC, SAVINGS DESC;
 """
@@ -381,9 +382,9 @@ myst_week_p = myst_week_p.style.format({'Mystery': make_clickable, 'Solved?': ma
     .background_gradient(cmap='Blues') \
     .hide_index()
 
-myst_week_np = myst_week_np.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
-    .background_gradient(cmap='Blues') \
-    .hide_index()
+#myst_week_np = myst_week_np.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
+#    .background_gradient(cmap='Blues') \
+#    .hide_index()
 
 myst_active = myst_active.style.format({'Mystery': make_clickable, 'Solved?': make_clickable } ) \
     .background_gradient(cmap='Blues') \
@@ -394,10 +395,10 @@ myst_active = myst_active.style.format({'Mystery': make_clickable, 'Solved?': ma
 heading = '<h1> Mystery Wines</h1>'
 subheading1 = '<h3> <br> <br> New mystery wines today - latest run' + str(myst_run) +  '</h3>'
 subheading2 = '<h3> <br> <br> New mystery wines last fortnight - with clear promo <br> <br></h3>'
-subheading3 = '<h3> <br> <br> New mystery wines last fortnight - Not sure about promo <br> <br></h3>'
+#subheading3 = '<h3> <br> <br> New mystery wines last fortnight - Not sure about promo <br> <br></h3>'
 subheading4 = '<h3> <br> <br> All active mystery wines <br> <br></h3>'
 
-html=heading + subheading1 + myst_day.render() + subheading2 + myst_week_p.render() + subheading3 + myst_week_np.render() + subheading4 + myst_active.render()
+html=heading + subheading1 + myst_day.render() + subheading2 + myst_week_p.render() + subheading4 + myst_active.render()
 html_file = "/home/stu/code/dans/files/myst.html"
 with open(html_file,'w') as file:
     file.write(html)

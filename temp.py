@@ -36,22 +36,23 @@ for filename in all_files:
     df = pd.read_csv(filename, index_col=None, header=0)
     li.append(df)
 
-frame = pd.concat(li, axis=0, ignore_index=True)
-
+print(li)
+frame = pd.concat(li, axis=0,header=0, ignore_index=True)
+print(frame)
 # And now to cleanup results, and remove duplicates
-
 wines = frame
 
 wines.columns = ['URL']
-
+print(wines)
 # And now I'll filter out the product linkes
 wines = wines[wines.URL.str.contains('https://www.danmurphys.com.au/product',case=False, na=False)]
-
+print(wines)
 wines = wines.replace(r'.*https://www.danmurphys.com.au/product/DM_', r'', regex=True)
 wines = wines.replace(r'/.*$', r'', regex=True)
+print(wines)
 wines = wines.drop_duplicates()
 wines = wines.dropna()
-
+print(wines) 
 #Get the existing mysteries and call again
 #### RUNNING HERE
 user = 'root'
@@ -64,13 +65,13 @@ dbConnection    = sqlEngine.connect()
 
 stockcode_sql = """\
 --  
-select distinct(Stockcode) from raw_dans_raw_main where Mystery=1;
+select distinct(Stockcode) from raw_dans_raw_main where Mystery=1 and Mystery=0;
 """
 
 stockcode = pd.read_sql(stockcode_sql, dbConnection)
 
 stockcode = stockcode.rename(columns={'Stockcode': 'URL'})
-wines = wines.append(stockcode)
+#wines = wines.append(stockcode)
 
 
 #And now to call the API

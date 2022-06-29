@@ -29,7 +29,7 @@ def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
 
 
     ###********NEW> LIMIT TO WINES ONLY
-    my_df = my_df[my_df['Categories'].isin(['red-wine', 'white-wine'])]
+    #my_df = my_df[my_df['Categories'].isin(['red-wine', 'white-wine'])]
     
     ## WORK AROUND> NOT SURE WHY. TODO
     my_df = my_df[my_df['Stockcode'] != 'ER_2000003422_RX2386']
