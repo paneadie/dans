@@ -240,6 +240,12 @@ database = 'dans_dev'
 sqlEngine = create_engine('mysql+mysqlconnector://' + user + ':' + passw + '@' + host + ':' + str(port) + '/' + database , echo=False)
 dbConnection    = sqlEngine.connect()
 
+
+sql_0 = "SELECT `COLUMN_NAME` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA`='dans_dev' AND `TABLE_NAME`='raw_dans_raw_main'"
+
+dbConnection
+
+
 sql = "With latest as (select Stockcode, max(ts_activity) ts_activity from raw_dans_raw_main group by Stockcode) select rdrm.* from raw_dans_raw_main rdrm, latest l where 1=1 and rdrm.Stockcode=l.Stockcode and rdrm.ts_activity=l.ts_activity ;"
 
 wide = pd.read_sql(sql, dbConnection)

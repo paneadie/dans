@@ -14,6 +14,199 @@ regex = re.compile(r"\[|\]|<", re.IGNORECASE)
 import time
 import copy
 
+## Loading now as I'll need this at the end
+master_cols = ['age',
+'AgeRestricted',
+'awardwinner',
+'BackorderMessage',
+'BackorderStockOnHand',
+'brewery',
+'Categories',
+'cidertype',
+'corkscoreeligible',
+'countryoforigin',
+'DeliveryOptionsInfo',
+'Description',
+'DisplayQuantity',
+'dm_stockcode',
+'extbeerid',
+'glutenfree',
+'ibu',
+'image1',
+'image2',
+'image3',
+'image4',
+'index',
+'Inventory',
+'Inventory.availableinventoryqty',
+'Inventory.backorderavailableinventoryqty',
+'Inventory.backorderinventoryflag',
+'Inventory.clickandcollect2hrsinventoryqty',
+'Inventory.clickandcollect2hrsinventoryqtymessage',
+'Inventory.clickandcollect7daysinventoryqty',
+'Inventory.clickandcollect7daysinventoryqtymessage',
+'Inventory.findinstoreinventoryqty',
+'Inventory.findinstoreinventoryqtymessage',
+'Inventory.isfindme2hrsinventoryavailable',
+'Inventory.isfindme7daysinventoryavailable'
+,'Inventory.isfindmedeliveryinventoryavailable'
+,'Inventory.nextdaydeliveryinventoryqty'
+,'Inventory.nextdaydeliveryinventoryqtymessage'
+,'Inventory.onlineinventoryqty'
+,'Inventory.pickadaydeliveryinventoryqty'
+,'Inventory.pickadaydeliveryinventoryqtymessage'
+,'Inventory.samedaydeliveryinventoryqty'
+,'Inventory.samedaydeliveryinventoryqtymessage'
+,'IsComingSoon'
+,'IsDeliveryOnly'
+,'IsEdrSpecial'
+,'IsFeaturedTag'
+,'IsFindMeAvailable'
+,'IsForCollection'
+,'IsForDelivery'
+,'IsInDefaultList'
+,'IsInTrolley'
+,'IsInWishList'
+,'IsMemberSpecial'
+,'IsNew'
+,'IsOnSpecial'
+,'IsPreSale'
+,'IsPurchasable'
+,'isvintagerollingorstatic'
+,'LargeImageFile'
+,'MediumImageFile'
+,'MinimumQuantity'
+,'Mystery'
+,'NumberOfReviews'
+,'OverallRating'
+,'PackageSize'
+,'ParentStockCode'
+,'PickupStoreInventoryInfo.Available'
+,'PickupStoreInventoryInfo.DistanceFromDeliveryLocation'
+,'PickupStoreInventoryInfo.StoreName'
+,'PickupStoreInventoryInfo.StoreNo'
+,'preservativefree'
+,'Prices.caseprice.AfterPromotion'
+,'Prices.caseprice.BeforePromotion'
+,'Prices.caseprice.IsMemberOffer'
+,'Prices.caseprice.Message'
+,'Prices.caseprice.Value'
+,'Prices.inanysixprice.AfterPromotion'
+,'Prices.inanysixprice.BeforePromotion'
+,'Prices.inanysixprice.IsMemberOffer'
+,'Prices.inanysixprice.Message'
+,'Prices.inanysixprice.Value'
+,'Prices.promoprice.AfterPromotion'
+,'Prices.promoprice.BeforePromotion'
+,'Prices.promoprice.IsMemberOffer'
+,'Prices.promoprice.Message'
+,'Prices.promoprice.Value'
+,'Prices.singleprice.AfterPromotion'
+,'Prices.singleprice.BeforePromotion'
+,'Prices.singleprice.IsMemberOffer'
+,'Prices.singleprice.Message'
+,'Prices.singleprice.Value'
+,'Prices.webminqty.AfterPromotion'
+,'Prices.webminqty.BeforePromotion'
+,'Prices.webminqty.IsMemberOffer'
+,'Prices.webminqty.Message'
+,'Prices.webminqty.Value'
+,'product_short_name'
+,'ProductsInSameOffer'
+,'producttitle'
+,'QuantityInTrolley'
+,'RecommendedProducts'
+,'Review1_auth'
+,'Review1_authorcontent'
+,'Review1_points'
+,'Review1_source'
+,'Review1_text'
+,'Review1_vintage'
+,'Review2_auth'
+,'Review2_authorcontent'
+,'Review2_points'
+,'Review2_source'
+,'Review2_text'
+,'Review2_vintage'
+,'RichDescription'
+,'SavedLists'
+,'ShouldShowFindMeCta'
+,'SmallImageFile'
+,'Source'
+,'standarddrinks'
+,'Stockcode'
+,'StockOnHand'
+,'Sub_Categories'
+,'SupplyLimit'
+,'ts_activity'
+,'Unit'
+,'Unnamed: 0'
+,'UrlFriendlyName'
+,'varietal'
+,'webalcoholpercentage'
+,'webaverageproductrating'
+,'webbadgescollection'
+,'webbadgescollection2'
+,'webbeerstyle'
+,'webbottleclosure'
+,'webbrandname'
+,'webbrewedunderlicense'
+,'webbundleenddate'
+,'webbundleexpandincart'
+,'webbundleskucomponent'
+,'webbundleskuquantity'
+,'webbundlestartdate'
+,'webciderstyle'
+,'webcountryoforigin'
+,'webdescriptionshort'
+,'webdsvflag'
+,'webdsvname'
+,'webdsvvendorid'
+,'webfoodmatch'
+,'webisorganic'
+,'webisvegan'
+,'weblangtonsclassification'
+,'webliquorsize'
+,'webmaincategory'
+,'webmaxquantity'
+,'webminquantity'
+,'webpacksizecase'
+,'webpacksizeinner'
+,'webpacktype'
+,'webpresaledmmaxqtylimit'
+,'webpresaleenddate'
+,'webpresaleflag'
+,'webpresalemarketlaunchdate'
+,'webpresalemdmmaxqtylimit'
+,'webpresaleorderreleasedate'
+,'webpresalestartdate'
+,'webpresaleusermaxqtylimit'
+,'webproductcanbechilled'
+,'webproductname'
+,'webproductsale'
+,'webproducttype'
+,'webpromomdmmessage'
+,'webpromomessage'
+,'webpromomessageenddt'
+,'webpromomessagestartdt'
+,'webpromosecondmesgenddt'
+,'webpromosecondmesgstartdt'
+,'webpromosecondmessage'
+,'webpromotionalbundle'
+,'webregionoforigin'
+,'webreviewrating'
+,'webspiritstyle'
+,'webstateoforigin'
+,'webtitle'
+,'webtotalreviewcount'
+,'webvideourl'
+,'webvintagecurrent'
+,'webvintagenote'
+,'webwhiskystyle'
+,'webwinebody'
+,'webwinemaker'
+,'webwinestyle']
+
 
 def load_n_explode(file_res="API_results_" + time.strftime("%Y%m%d") + ".csv"):
     # file_res = "API_results_20210823.csv"
@@ -141,6 +334,13 @@ os.chdir('/home/stu/code/dans/files')
 input_file = "API_results_" + time.strftime("%Y%m%d") + ".csv"
 wide = load_n_explode(input_file)
 
+## FINALLY FIXED THIS SILLY BUG... ?!
+## Get columns, use existing table columns, and then drop all that aren't in our target table.
+run_cols = list(wide.columns)
+cleaned_cols = [x for x in run_cols if x in master_cols]
+cleaned = wide[cleaned_cols]
+
+
 user = 'root'
 passw = 'MYSQLl0g1n!'
 host =  '127.0.0.1'
@@ -158,7 +358,7 @@ dbConnection    = sqlEngine.connect()
 tableName = "raw_dans_raw_main"
 
 try:
-    frame           = wide.to_sql(tableName, dbConnection, if_exists='append', method='multi', chunksize = 1000 );
+    frame           = cleaned.to_sql(tableName, dbConnection, if_exists='append', method='multi', chunksize = 1000 );
 except ValueError as vx:
     print(vx)
 except Exception as ex:   
